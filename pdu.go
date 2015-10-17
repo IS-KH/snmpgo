@@ -165,6 +165,7 @@ func (v sortableVarBinds) Less(i, j int) bool {
 }
 
 // The protocol data unit of SNMP
+
 type Pdu interface {
 	PduType() PduType
 	RequestId() int
@@ -183,12 +184,22 @@ type Pdu interface {
 }
 
 // The PduV1 is used by SNMP V1 and V2c, other than the SNMP V1 Trap
+
 type PduV1 struct {
 	pduType     PduType
 	requestId   int
 	errorStatus ErrorStatus
 	errorIndex  int
 	varBinds    VarBinds
+}
+
+type TrapPduV1 struct {
+	enterprise string
+	agentAddr string
+	genericTrap int
+	specificTrap int
+	timeStamp int
+	variableBindings int
 }
 
 func (pdu *PduV1) PduType() PduType {
