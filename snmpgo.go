@@ -5,6 +5,10 @@ import (
 	"math"
 	"net"
 	"time"
+	"encoding/hex"
+	"encoding/asn1"
+	"strings"
+	"strconv"
 )
 
 // An argument for creating a SNMP Object
@@ -151,6 +155,7 @@ func (s *SNMP) Open() (err error) {
 
 // Close a connection
 func (s *SNMP) Close() {
+	fmt.Println("Close")
 	if s.conn != nil {
 		s.conn.Close()
 		s.conn = nil
@@ -282,6 +287,97 @@ func (s *SNMP) GetBulkWalk(oids Oids, nonRepeaters, maxRepetitions int) (result 
 	return NewPduWithVarBinds(s.args.Version, GetResponse, resBinds), nil
 }
 
+func (s *SNMP) V1Trap(varPduV1 TrapPduV1) (err error) {
+	if s.args.Version > V1 {
+		return ArgumentError{
+			Value:   s.args.Version,
+			Message: "V1trap Unsupported other SNMP Version",
+		}
+	}
+	
+	var buf []byte
+	raw := asn1.RawValue{Class: classUniversal, Tag: tagSequence, IsCompound: true}
+
+	//Version
+	buf, err = asn1.Marshal(s.args.Version)
+	if err != nil {
+		return
+	}
+	raw.Bytes = append(raw.Bytes, buf...)
+	
+	//Community
+	buf, err = NewOctetString([]byte(s.args.Community)).Marshal()
+	if err != nil {
+		return
+	}
+	raw.Bytes = append(raw.Bytes, buf...)
+	
+	//Data Trap
+	buf = []byte{0xa4,0x00}
+	raw.Bytes = append(raw.Bytes, buf...)
+	
+	dataTrapLength := len(raw.Bytes)
+	
+	//Enterprise
+	oid, _ := NewOid(varPduV1.Enterprise)
+	buf, err = oid.Marshal()
+	if err != nil {
+		return
+	}
+	raw.Bytes = append(raw.Bytes, buf...)
+	
+	//AgentAddr
+	var ipByte [4]byte
+
+	for n,v:=range strings.Split(varPduV1.AgentAddr,".") {
+		input, _ := strconv.Atoi(v)
+		
+		ipByte[n]= (byte)(input)
+	}
+
+	ip := NewIpaddress(ipByte[0],ipByte[1],ipByte[2],ipByte[3])
+	buf, err = ip.Marshal()
+	if err != nil {
+		return
+	}
+	raw.Bytes = append(raw.Bytes, buf...)
+	
+	//GenericTrap
+	buf, err = NewInteger((int32)(varPduV1.GenericTrap)).Marshal()
+	if err != nil {
+		return
+	}
+	raw.Bytes = append(raw.Bytes, buf...)
+	
+	//SpecificTrap
+	buf, err = NewInteger((int32)(varPduV1.SpecificTrap)).Marshal()
+	if err != nil {
+		return
+	}
+	raw.Bytes = append(raw.Bytes, buf...)
+	
+	//TimeStamp
+	buf, err = NewTimeTicks((uint32)(varPduV1.TimeStamp)).Marshal()
+	if err != nil {
+		return
+	}
+	raw.Bytes = append(raw.Bytes, buf...)
+	
+	//VarBinds
+	buf = []byte{0x30,0x00}
+	raw.Bytes = append(raw.Bytes, buf...)
+	
+	raw.Bytes[dataTrapLength-1] = (byte)(len(raw.Bytes) - dataTrapLength)
+	
+	marbuf , _ := asn1.Marshal(raw)
+	fmt.Println(hex.Dump(marbuf))
+
+	s.conn.SetWriteDeadline(time.Now().Add(s.args.Timeout))
+	_, err = s.conn.Write(marbuf[:len(marbuf)])
+	fmt.Println("err = " , err)
+	return err
+}
+
 func (s *SNMP) V2Trap(varBinds VarBinds) error {
 	return s.v2trap(SNMPTrapV2, varBinds)
 }
@@ -291,6 +387,7 @@ func (s *SNMP) InformRequest(varBinds VarBinds) error {
 }
 
 func (s *SNMP) v2trap(pduType PduType, varBinds VarBinds) (err error) {
+	fmt.Println("v2trap")
 	if s.args.Version < V2c {
 		return ArgumentError{
 			Value:   s.args.Version,
@@ -308,12 +405,14 @@ func (s *SNMP) v2trap(pduType PduType, varBinds VarBinds) (err error) {
 }
 
 func (s *SNMP) sendPdu(pdu Pdu) (result Pdu, err error) {
+	fmt.Println("sendPdu")
 	if err = s.Open(); err != nil {
 		return
 	}
 
 	var sendMsg message
 	sendMsg, err = s.mp.PrepareOutgoingMessage(s, pdu)
+	fmt.Println("sendMsg = " , sendMsg)
 	if err != nil {
 		return
 	}
@@ -323,7 +422,7 @@ func (s *SNMP) sendPdu(pdu Pdu) (result Pdu, err error) {
 	if err != nil {
 		return
 	}
-
+	fmt.Println(hex.Dump(buf))
 	s.conn.SetWriteDeadline(time.Now().Add(s.args.Timeout))
 	_, err = s.conn.Write(buf)
 	if !confirmedType(pdu.PduType()) || err != nil {
@@ -340,7 +439,8 @@ func (s *SNMP) sendPdu(pdu Pdu) (result Pdu, err error) {
 	if err != nil {
 		return
 	}
-
+	fmt.Println("buf = " , buf)
+	fmt.Println("sendMsg = " , sendMsg)
 	result, err = s.mp.PrepareDataElements(s, sendMsg, buf)
 	if result != nil && len(pdu.VarBinds()) != 0 {
 		if err = s.checkPdu(result); err != nil {

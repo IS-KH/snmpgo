@@ -14,6 +14,7 @@ import (
 	"hash"
 	"math"
 	"time"
+	"encoding/hex"
 )
 
 type security interface {
@@ -33,6 +34,7 @@ func (c *community) GenerateRequestMessage(snmp *SNMP, sendMsg message) (err err
 	if err != nil {
 		return
 	}
+	fmt.Println("GenerateRequestMessage" , hex.Dump(b))
 	m.SetPduBytes(b)
 
 	return

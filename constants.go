@@ -36,6 +36,7 @@ const (
 	GetBulkRequest
 	InformRequest
 	SNMPTrapV2
+	SNMPTrapV1
 	Report
 )
 
@@ -57,6 +58,8 @@ func (t PduType) String() string {
 		return "InformRequest"
 	case SNMPTrapV2:
 		return "SNMPTrapV2"
+	case SNMPTrapV1:
+		return "SNMPTrapV1"
 	case Report:
 		return "Report"
 	default:
