@@ -13,7 +13,7 @@ type VarBind struct {
 }
 
 func (v *VarBind) Marshal() (b []byte, err error) {
-	fmt.Println("VarBind Marshal")
+	//fmt.Println("VarBind Marshal")
 	var buf []byte
 	raw := asn1.RawValue{Class: classUniversal, Tag: tagSequence, IsCompound: true}
 

@@ -34,7 +34,7 @@ func (c *community) GenerateRequestMessage(snmp *SNMP, sendMsg message) (err err
 	if err != nil {
 		return
 	}
-	fmt.Println("GenerateRequestMessage" , hex.Dump(b))
+	//fmt.Println("GenerateRequestMessage" , hex.Dump(b))
 	m.SetPduBytes(b)
 
 	return

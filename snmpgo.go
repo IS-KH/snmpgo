@@ -387,7 +387,7 @@ func (s *SNMP) InformRequest(varBinds VarBinds) error {
 }
 
 func (s *SNMP) v2trap(pduType PduType, varBinds VarBinds) (err error) {
-	fmt.Println("v2trap")
+	//fmt.Println("v2trap")
 	if s.args.Version < V2c {
 		return ArgumentError{
 			Value:   s.args.Version,
@@ -412,7 +412,7 @@ func (s *SNMP) sendPdu(pdu Pdu) (result Pdu, err error) {
 
 	var sendMsg message
 	sendMsg, err = s.mp.PrepareOutgoingMessage(s, pdu)
-	fmt.Println("sendMsg = " , sendMsg)
+	//fmt.Println("sendMsg = " , sendMsg)
 	if err != nil {
 		return
 	}
@@ -439,8 +439,8 @@ func (s *SNMP) sendPdu(pdu Pdu) (result Pdu, err error) {
 	if err != nil {
 		return
 	}
-	fmt.Println("buf = " , buf)
-	fmt.Println("sendMsg = " , sendMsg)
+	//fmt.Println("buf = " , buf)
+	//fmt.Println("sendMsg = " , sendMsg)
 	result, err = s.mp.PrepareDataElements(s, sendMsg, buf)
 	if result != nil && len(pdu.VarBinds()) != 0 {
 		if err = s.checkPdu(result); err != nil {
