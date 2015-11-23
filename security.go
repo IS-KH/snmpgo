@@ -14,7 +14,6 @@ import (
 	"hash"
 	"math"
 	"time"
-	"encoding/hex"
 )
 
 type security interface {
