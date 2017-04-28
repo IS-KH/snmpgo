@@ -2,8 +2,8 @@ package snmpgo
 
 import (
 	"encoding/asn1"
-	"fmt"
 	"encoding/hex"
+	"fmt"
 )
 
 type message interface {
@@ -41,7 +41,7 @@ func (msg *messageV1) SetPduBytes(b []byte) {
 
 func (msg *messageV1) Marshal() (b []byte, err error) {
 	//fmt.Println("Marshal")
-	fmt.Println(hex.Dump(msg.pduBytes))
+	// fmt.Println(hex.Dump(msg.pduBytes))
 	var buf []byte
 	raw := asn1.RawValue{Class: classUniversal, Tag: tagSequence, IsCompound: true}
 
@@ -56,8 +56,8 @@ func (msg *messageV1) Marshal() (b []byte, err error) {
 		return
 	}
 	raw.Bytes = append(raw.Bytes, buf...)
-	
-	fmt.Println(hex.Dump(msg.pduBytes))
+
+	// fmt.Println(hex.Dump(msg.pduBytes))
 	raw.Bytes = append(raw.Bytes, msg.pduBytes...)
 	return asn1.Marshal(raw)
 }
